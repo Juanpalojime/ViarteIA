@@ -4,8 +4,8 @@ import Database from 'better-sqlite3';
 const dbPath = process.env.DATABASE_URL || 'dev.db';
 const db = new Database(dbPath);
 
-// Enable Write-Ahead Logging for concurrency
-db.pragma('journal_mode = WAL');
+// Enable Write-Ahead Logging for concurrency (Disabled for Colab/Drive compatibility)
+// db.pragma('journal_mode = WAL');
 
 // Define Schema
 const schema = `
