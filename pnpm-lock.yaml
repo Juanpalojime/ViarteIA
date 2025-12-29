@@ -120,9 +120,9 @@ importers:
       fastify:
         specifier: ^5.2.0
         version: 5.6.2
-      groq:
-        specifier: ^0.8.0
-        version: 0.15.0
+      groq-sdk:
+        specifier: ^0.37.0
+        version: 0.37.0
       ioredis:
         specifier: ^5.4.2
         version: 5.8.2
@@ -1890,8 +1890,8 @@ packages:
   grammex@3.1.12:
     resolution: {integrity: sha512-6ufJOsSA7LcQehIJNCO7HIBykfM7DXQual0Ny780/DEcJIpBlHRvcqEBWGPYd7hrXL2GJ3oJI1MIhaXjWmLQOQ==}
 
-  groq@0.8.0:
-    resolution: {integrity: sha512-aYDEdr4qczx3cLCRRe+Beb37I7g/9bD5kHF+EEDxcrREWw1vKoRcfP3vHEkJB7Ud/8oOuF0scRwDpwWostTWuQ==}
+  groq-sdk@0.37.0:
+    resolution: {integrity: sha512-lT72pcT8b/X5XrzdKf+rWVzUGW1OQSKESmL8fFN5cTbsf02gq6oFam4SVeNtzELt9cYE2Pt3pdGgSImuTbHFDg==}
 
   has-symbols@1.1.0:
     resolution: {integrity: sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ==}
@@ -4849,7 +4849,7 @@ snapshots:
 
   grammex@3.1.12: {}
 
-  groq@0.8.0:
+  groq-sdk@0.37.0:
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13

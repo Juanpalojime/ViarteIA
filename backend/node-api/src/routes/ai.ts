@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import Groq from 'groq';
+import Groq from 'groq-sdk';
 
 // 🔴 ¡CRÍTICO! Valida la API key al cargar el módulo
 if (!process.env.GROQ_API_KEY) {
