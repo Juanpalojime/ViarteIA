@@ -105,20 +105,55 @@ function PreferencesTab() {
 }
 
 function APIKeysTab() {
+    const [ngrokUrl, setNgrokUrl] = useState(localStorage.getItem('VITE_API_URL_OVERRIDE') || '');
+
+    const handleSaveNgrok = () => {
+        if (!ngrokUrl) {
+            localStorage.removeItem('VITE_API_URL_OVERRIDE');
+        } else {
+            // Ensure it ends with /api
+            const cleanUrl = ngrokUrl.endsWith('/api') ? ngrokUrl : `${ngrokUrl.replace(/\/$/, '')}/api`;
+            localStorage.setItem('VITE_API_URL_OVERRIDE', cleanUrl);
+        }
+        window.location.reload(); // Reload to apply new API URL
+    };
+
     return (
         <div className={styles.tabContent}>
-            <h2 className={styles.tabTitle}>API Keys</h2>
-            <p className={styles.tabDescription}>Manage your API keys for integrations</p>
+            <h2 className={styles.tabTitle}>Server Connection</h2>
+            <p className={styles.tabDescription}>Configure your remote Colab/Ngrok backend</p>
+
+            <div className={styles.form} style={{ marginBottom: '32px' }}>
+                <div className={styles.formGroup}>
+                    <label className={styles.label}>Ngrok Backend URL</label>
+                    <input
+                        type="text"
+                        className={styles.input}
+                        placeholder="https://your-id.ngrok-free.app"
+                        value={ngrokUrl}
+                        onChange={(e) => setNgrokUrl(e.target.value)}
+                    />
+                    <p style={{ fontSize: '10px', color: '#555566', marginTop: '4px' }}>
+                        Copia la URL que aparece en Colab y pégala aquí. La app se reiniciará al guardar.
+                    </p>
+                </div>
+                <button className={styles.saveButton} onClick={handleSaveNgrok}>
+                    Connect & Reload 🚀
+                </button>
+            </div>
+
+            <div className={styles.divider} />
+
+            <h2 className={styles.tabTitle} style={{ marginTop: '24px' }}>Project API Keys</h2>
+            <p className={styles.tabDescription}>Manage your internal project keys</p>
 
             <div className={styles.apiKeyCard}>
                 <div className={styles.apiKeyHeader}>
-                    <span className={styles.apiKeyName}>Production Key</span>
+                    <span className={styles.apiKeyName}>ViarteIA Internal Key</span>
                     <button className={styles.copyButton}>📋 Copy</button>
                 </div>
-                <code className={styles.apiKeyValue}>vta_prod_••••••••••••••••••••1234</code>
+                <code className={styles.apiKeyValue}>vta_dev_••••••••••••••••••••9988</code>
             </div>
-
-            <button className={styles.createButton}>+ Create New Key</button>
         </div>
     );
 }

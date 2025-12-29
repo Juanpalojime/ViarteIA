@@ -1,4 +1,11 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+/// <reference types="vite/client" />
+const getBaseUrl = () => {
+    const override = localStorage.getItem('VITE_API_URL_OVERRIDE');
+    if (override) return override;
+    return import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+};
+
+const API_URL = getBaseUrl();
 
 const getToken = () => localStorage.getItem('token');
 
@@ -6,6 +13,7 @@ async function request(path: string, options: RequestInit = {}) {
     const token = getToken();
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true', // ✅ Bypass Ngrok warning page
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options.headers,
     };

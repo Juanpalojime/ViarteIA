@@ -14,11 +14,11 @@ export default function AuthPage() {
     const { login, register, isAuthenticated, isLoading, error } = useAuthStore();
     const navigate = useNavigate();
 
-    // Redirigir si ya está autenticado
+    // Deshabilitamos la redirección forzada para evitar bucles
     useEffect(() => {
-        if (isAuthenticated) {
-            navigate('/generation');
-        }
+        // if (isAuthenticated) {
+        //     navigate('/generation');
+        // }
     }, [isAuthenticated, navigate]);
 
     // Validación en tiempo real de la contraseña (solo en registro)
@@ -68,9 +68,7 @@ export default function AuthPage() {
                 <div className={styles.header}>
                     <h1 className={styles.title}>ViarteIA</h1>
                     <p className={styles.subtitle}>
-                        {isLogin
-                            ? '¡Bienvenido de nuevo! Inicia sesión para continuar.'
-                            : 'Crea tu cuenta para empezar a generar videos con IA.'}
+                        ¡Bienvenido! Inicia sesión para continuar.
                     </p>
                 </div>
 
@@ -81,23 +79,6 @@ export default function AuthPage() {
                 )}
 
                 <form className={styles.form} onSubmit={handleSubmit}>
-                    {!isLogin && (
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label} htmlFor="name">
-                                Nombre completo
-                            </label>
-                            <input
-                                id="name"
-                                className={styles.input}
-                                type="text"
-                                placeholder="Juan Pérez"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required={!isLogin}
-                            />
-                        </div>
-                    )}
-
                     <div className={styles.inputGroup}>
                         <label className={styles.label} htmlFor="email">
                             Correo electrónico
@@ -128,60 +109,17 @@ export default function AuthPage() {
                         />
                     </div>
 
-                    {!isLogin && (
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label} htmlFor="confirmPassword">
-                                Confirmar contraseña
-                            </label>
-                            <input
-                                id="confirmPassword"
-                                className={styles.input}
-                                type="password"
-                                placeholder="••••••••"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                required={!isLogin}
-                            />
-                        </div>
-                    )}
-
                     <button
                         className={styles.button}
                         type="submit"
                         disabled={isLoading}
                     >
-                        {isLoading
-                            ? 'Procesando...'
-                            : isLogin
-                                ? 'Iniciar sesión'
-                                : 'Crear cuenta'}
+                        {isLoading ? 'Procesando...' : 'Iniciar sesión'}
                     </button>
                 </form>
 
                 <div className={styles.footer}>
-                    {isLogin ? (
-                        <p>
-                            ¿No tienes cuenta?{' '}
-                            <button
-                                type="button"
-                                className={styles.linkButton}
-                                onClick={() => setIsLogin(false)}
-                            >
-                                Regístrate
-                            </button>
-                        </p>
-                    ) : (
-                        <p>
-                            ¿Ya tienes cuenta?{' '}
-                            <button
-                                type="button"
-                                className={styles.linkButton}
-                                onClick={() => setIsLogin(true)}
-                            >
-                                Inicia sesión
-                            </button>
-                        </p>
-                    )}
+                    <p>© 2025 ViarteIA - Todos los derechos reservados.</p>
                 </div>
             </div>
         </div>

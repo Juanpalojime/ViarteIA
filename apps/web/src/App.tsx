@@ -54,65 +54,21 @@ function App() {
             <div className={`${darkTheme} ${styles.app}`}>
                 <Suspense fallback={<PageLoader />}>
                     <Routes>
-                        {/* Public Routes */}
-                        <Route path="/auth" element={<AuthPage />} />
+                        {/* Public Routes (Desactivadas - redirigen al estudio) */}
+                        <Route path="/auth" element={<Navigate to="/generation" replace />} />
 
-                        {/* Protected Routes */}
+                        {/* Protected Routes (Now Public for easier testing) */}
                         <Route path="/" element={<Navigate to="/generation" replace />} />
 
-                        <Route path="/generation" element={
-                            <RequireAuth>
-                                <GenerationPage />
-                            </RequireAuth>
-                        } />
-
-                        <Route path="/editor" element={
-                            <RequireAuth>
-                                <EditorPage />
-                            </RequireAuth>
-                        } />
-
-                        <Route path="/templates" element={
-                            <RequireAuth>
-                                <TemplatesPage />
-                            </RequireAuth>
-                        } />
-
-                        <Route path="/library" element={
-                            <RequireAuth>
-                                <LibraryPage />
-                            </RequireAuth>
-                        } />
-
-                        <Route path="/favorites" element={
-                            <RequireAuth>
-                                <FavoritesPage />
-                            </RequireAuth>
-                        } />
-
-                        <Route path="/community" element={
-                            <RequireAuth>
-                                <CommunityPage />
-                            </RequireAuth>
-                        } />
-
-                        <Route path="/settings" element={
-                            <RequireAuth>
-                                <SettingsPage />
-                            </RequireAuth>
-                        } />
-
-                        <Route path="/subscription" element={
-                            <RequireAuth>
-                                <SubscriptionPage />
-                            </RequireAuth>
-                        } />
-
-                        <Route path="/profile" element={
-                            <RequireAuth>
-                                <ProfilePage />
-                            </RequireAuth>
-                        } />
+                        <Route path="/generation" element={<GenerationPage />} />
+                        <Route path="/editor" element={<EditorPage />} />
+                        <Route path="/templates" element={<TemplatesPage />} />
+                        <Route path="/library" element={<LibraryPage />} />
+                        <Route path="/favorites" element={<FavoritesPage />} />
+                        <Route path="/community" element={<CommunityPage />} />
+                        <Route path="/settings" element={<SettingsPage />} />
+                        <Route path="/subscription" element={<SubscriptionPage />} />
+                        <Route path="/profile" element={<ProfilePage />} />
                     </Routes>
                 </Suspense>
             </div>

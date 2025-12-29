@@ -1,6 +1,12 @@
 import { style } from '@vanilla-extract/css';
 import { vars } from '../styles/theme.css';
 
+export const divider = style({
+    height: '1px',
+    backgroundColor: vars.color.border.default,
+    margin: `${vars.space.xl} 0`,
+});
+
 export const container = style({
     flex: 1,
     display: 'flex',
@@ -211,12 +217,13 @@ export const toggle = style({
         transition: `transform ${vars.transition.base}`,
     },
 
-    ':checked': {
-        backgroundColor: vars.color.primary.main,
-    },
-
-    ':checked::before': {
-        transform: 'translateX(20px)',
+    selectors: {
+        '&:checked': {
+            backgroundColor: vars.color.primary.main,
+        },
+        '&:checked::before': {
+            transform: 'translateX(20px)',
+        },
     },
 });
 

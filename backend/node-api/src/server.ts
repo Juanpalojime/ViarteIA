@@ -98,6 +98,14 @@ server.decorate('authenticate', async function (request: FastifyRequest, reply: 
 // Register routes
 server.register(async (fastify) => {
     // Public Health
+    fastify.get('/', async () => {
+        return {
+            message: 'ViarteIA API is running',
+            health: '/api/health',
+            docs: '/docs'
+        };
+    });
+
     fastify.get('/health', async () => {
         const uptime = process.uptime();
         const memoryUsage = process.memoryUsage();

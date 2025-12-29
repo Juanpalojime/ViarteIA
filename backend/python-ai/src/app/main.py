@@ -4,6 +4,7 @@ import logging
 import os
 
 from app.routers import text_to_video, image_to_video, health, magic_prompt
+from app.services.ai_engine import engine
 
 # Configure logging
 logging.basicConfig(
