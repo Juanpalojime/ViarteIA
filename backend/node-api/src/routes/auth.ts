@@ -1,120 +1,152 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
+import { User } from '@prisma/client'; // ✅ Tipado de Prisma
 
+// ✅ Tipado explícito del usuario en la sesión JWT
+declare module 'fastify' {
+    interface FastifyRequest {
+        user: {
+            id: string;
+            email: string;
+            role: string;
+        };
+    }
+}
+
+// ✅ Esquemas con validación más segura
 const RegisterSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(6),
-    name: z.string().optional(),
+    email: z.string().email({ message: 'Email inválido' }),
+    password: z
+        .string()
+        .min(8, 'La contraseña debe tener al menos 8 caracteres')
+        .regex(/[A-Z]/, 'La contraseña debe incluir una mayúscula')
+        .regex(/[0-9]/, 'La contraseña debe incluir un número'),
+    name: z.string().min(1).max(50).optional(),
 });
 
 const LoginSchema = z.object({
-    email: z.string().email(),
-    password: z.string(),
+    email: z.string().email({ message: 'Email inválido' }),
+    password: z.string().min(1, 'La contraseña es requerida'),
 });
 
+// ✅ Helper para eliminar la contraseña de forma segura
+const excludePassword = <T extends { password: string }>(user: T): Omit<T, 'password'> => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+};
+
 export async function authRoutes(fastify: FastifyInstance) {
-    const prisma = (fastify as any).prisma;
+    // ✅ Acceso tipado a Prisma
+    const prisma = fastify.prisma;
 
     // REGISTER
     fastify.post('/register', async (request, reply) => {
         try {
-            const data = RegisterSchema.parse(request.body);
+            const { email, password, name } = RegisterSchema.parse(request.body);
 
-            // Check if user exists
-            const existingUser = await prisma.user.findUnique({
-                where: { email: data.email },
-            });
-
+            // Verificar si el usuario ya existe
+            const existingUser = await prisma.user.findUnique({ where: { email } });
             if (existingUser) {
-                return reply.status(400).send({ error: 'User already exists' });
+                // ✅ Mensaje genérico para evitar enumeración de usuarios
+                return reply.status(400).send({ error: 'Credenciales inválidas' });
             }
 
-            // Hash password
-            const hashedPassword = await bcrypt.hash(data.password, 10);
+            // Hashear contraseña
+            const hashedPassword = await bcrypt.hash(password, 12); // ✅ 12 rondas para mayor seguridad
 
-            // Create User
+            // Crear usuario
             const user = await prisma.user.create({
                 data: {
-                    email: data.email,
+                    email,
                     password: hashedPassword,
-                    name: data.name || data.email.split('@')[0],
+                    name: name || email.split('@')[0],
                     role: 'user',
                 },
             });
 
-            // Generate Data (exclude password)
-            const { password, ...userWithoutPassword } = user;
+            // Generar token JWT
+            const token = fastify.jwt.sign({
+                id: user.id,
+                email: user.email,
+                role: user.role,
+            });
 
-            // Generate Token
-            const token = fastify.jwt.sign({ id: user.id, email: user.email, role: user.role });
-
-            return { user: userWithoutPassword, token };
-
+            return {
+                user: excludePassword(user),
+                token,
+            };
         } catch (error) {
             if (error instanceof z.ZodError) {
-                return reply.status(400).send({ error: 'Invalid input', details: error.errors });
+                return reply.status(400).send({
+                    error: 'Datos inválidos',
+                    details: error.errors.map(e => ({
+                        field: e.path.join('.'),
+                        message: e.message,
+                    })),
+                });
             }
             fastify.log.error(error);
-            return reply.status(500).send({ error: 'Internal Server Error' });
+            return reply.status(500).send({ error: 'Error interno del servidor' });
         }
     });
 
     // LOGIN
     fastify.post('/login', async (request, reply) => {
         try {
-            const data = LoginSchema.parse(request.body);
+            const { email, password } = LoginSchema.parse(request.body);
 
-            // Find User
-            const user = await prisma.user.findUnique({
-                where: { email: data.email },
+            const user = await prisma.user.findUnique({ where: { email } });
+            if (!user) {
+                // ✅ Mismo mensaje que para contraseña incorrecta (evita enumeración)
+                return reply.status(401).send({ error: 'Credenciales inválidas' });
+            }
+
+            const isValid = await bcrypt.compare(password, user.password);
+            if (!isValid) {
+                return reply.status(401).send({ error: 'Credenciales inválidas' });
+            }
+
+            const token = fastify.jwt.sign({
+                id: user.id,
+                email: user.email,
+                role: user.role,
             });
 
-            if (!user) {
-                return reply.status(401).send({ error: 'Invalid credentials' });
-            }
-
-            // Verify Password
-            const isValid = await bcrypt.compare(data.password, user.password);
-
-            if (!isValid) {
-                return reply.status(401).send({ error: 'Invalid credentials' });
-            }
-
-            // Generate Token
-            const token = fastify.jwt.sign({ id: user.id, email: user.email, role: user.role });
-
-            // Exclude password
-            const { password, ...userWithoutPassword } = user;
-
-            return { user: userWithoutPassword, token };
-
+            return {
+                user: excludePassword(user),
+                token,
+            };
         } catch (error) {
             if (error instanceof z.ZodError) {
-                return reply.status(400).send({ error: 'Invalid input', details: error.errors });
+                return reply.status(400).send({
+                    error: 'Datos inválidos',
+                    details: error.errors.map(e => ({
+                        field: e.path.join('.'),
+                        message: e.message,
+                    })),
+                });
             }
             fastify.log.error(error);
-            return reply.status(500).send({ error: 'Internal Server Error' });
+            return reply.status(500).send({ error: 'Error interno del servidor' });
         }
     });
 
-    // GET ME (Protected)
-    fastify.get('/me', {
-        onRequest: [fastify.authenticate]
-    }, async (request, reply) => {
+    // GET ME (Protegido)
+    fastify.get('/me', { onRequest: [fastify.authenticate] }, async (request, reply) => {
         try {
-            const { id } = request.user as any;
+            const { id } = request.user;
 
-            const user = await prisma.user.findUnique({
-                where: { id }
-            });
+            const user = await prisma.user.findUnique({ where: { id } });
+            if (!user) {
+                return reply.status(404).send({ error: 'Usuario no encontrado' });
+            }
 
-            if (!user) return reply.status(404).send({ error: 'User not found' });
-
-            const { password, ...userWithoutPassword } = user;
-            return userWithoutPassword;
+            return excludePassword(user);
         } catch (error) {
-            return reply.status(401).send({ error: 'Unauthorized' });
+            fastify.log.error(error);
+            return reply.status(401).send({ error: 'No autorizado' });
         }
     });
 }

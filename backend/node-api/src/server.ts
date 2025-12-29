@@ -1,3 +1,7 @@
+// ⚠️ CRITICAL: Load environment variables FIRST, before any other imports
+import dotenv from 'dotenv';
+dotenv.config();
+
 import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import axios from 'axios';
 import cors from '@fastify/cors';
@@ -6,7 +10,6 @@ import fastifyRedis from '@fastify/redis';
 import websocket from '@fastify/websocket';
 import fastifyJwt from '@fastify/jwt';
 import { PrismaClient } from '@prisma/client';
-import dotenv from 'dotenv';
 import { generationRoutes } from './routes/generation';
 import { authRoutes } from './routes/auth';
 import { assetsRoutes } from './routes/assets'; // Fixed extra space in path
@@ -15,13 +18,12 @@ import { initStorage } from './services/storage';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 
-dotenv.config();
-
-// Environment Validation
-const REQUIRED_ENV = ['JWT_SECRET', 'GROQ_API_KEY', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'];
+// Environment Validation (only critical ones)
+const REQUIRED_ENV = ['JWT_SECRET', 'GROQ_API_KEY'];
 for (const env of REQUIRED_ENV) {
     if (!process.env[env]) {
         console.error(`❌ Missing critical environment variable: ${env}`);
+        console.error(`   Make sure you have a .env file in backend/node-api/ with ${env} defined`);
         process.exit(1);
     }
 }

@@ -1,5 +1,100 @@
-node_modules
-# Keep environment variables out of version control
-.env
+# ========================
+# Node.js / npm / pnpm
+# ========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json      # Opcional: si usas pnpm o npm workspaces sin lock estricto
+.pnpmfile.cjs
 
-/src/generated/prisma
+# ========================
+# Entornos y secretos
+# ========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.DS_Store
+Thumbs.db
+
+# ========================
+# Compilación y builds
+# ========================
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+*.log
+
+# ========================
+# Python
+# ========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ========================
+# IDE / Editor
+# ========================
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# ========================
+# Docker
+# ========================
+.dockerignore
+docker-compose.override.yml
+
+# ========================
+# Prisma
+# ========================
+/src/generated/prisma/
+/prisma/migrations/*/seed.lock
+
+# ========================
+# Archivos de datos y medios (nunca en repo)
+# ========================
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.zip
+*.tar.gz
+*.safetensors
+*.ckpt
+*.pt
+*.bin
+models/
+data/
+assets/
+
+# ========================
+# Sistema
+# ========================
+desktop.ini

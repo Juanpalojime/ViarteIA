@@ -27,7 +27,7 @@ export const card = style({
     borderRadius: '24px',
     backgroundColor: 'rgba(23, 23, 35, 0.6)',
     backdropFilter: 'blur(20px)',
-    border: `1px solid ${vars.color.border}`,
+    border: `1px solid ${vars.color.border.default}`,
     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
     zIndex: 1,
     display: 'flex',
@@ -77,7 +77,7 @@ export const input = style({
     padding: '12px 16px',
     borderRadius: '12px',
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    border: `1px solid ${vars.color.border}`,
+    border: `1px solid ${vars.color.border.default}`,
     color: vars.color.text.primary,
     fontSize: vars.font.size.sm,
     transition: 'all 0.2s',
@@ -120,11 +120,17 @@ export const footer = style({
     color: vars.color.text.secondary,
 });
 
-export const link = style({
+// ✅ ¡NUEVO! Estilo para botón de enlace accesible
+export const linkButton = style({
+    background: 'none',
+    border: 'none',
     color: vars.color.primary.main,
     textDecoration: 'none',
     fontWeight: 500,
     cursor: 'pointer',
+    font: 'inherit',
+    padding: 0,
+    textAlign: 'inherit',
     ':hover': {
         textDecoration: 'underline',
     },

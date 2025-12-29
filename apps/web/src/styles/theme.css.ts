@@ -8,6 +8,13 @@ export const vars = createThemeContract({
             light: null,
             dark: null,
             alpha: null,
+            gradient: null,
+            hover: null,
+        },
+        border: {
+            default: null,
+            hover: null,
+            focus: null,
         },
         background: {
             main: null,
@@ -16,11 +23,7 @@ export const vars = createThemeContract({
             input: null,
             hover: null,
         },
-        border: {
-            default: null,
-            hover: null,
-            focus: null,
-        },
+
         text: {
             primary: null,
             secondary: null,
@@ -53,6 +56,18 @@ export const vars = createThemeContract({
         '2xl': null,
         '3xl': null,
         '4xl': null,
+    },
+    font: {
+        size: {
+            xs: null,
+            sm: null,
+            base: null,
+            lg: null,
+            xl: null,
+            '2xl': null,
+            '3xl': null,
+            '4xl': null,
+        },
     },
     fontWeight: {
         normal: null,
@@ -88,6 +103,13 @@ export const darkTheme = createTheme(vars, {
             light: '#7676f8',
             dark: '#3434d4',
             alpha: 'rgba(85, 85, 246, 0.1)',
+            gradient: 'linear-gradient(135deg, #5555f6 0%, #7676f8 100%)',
+            hover: '#6666f7',
+        },
+        border: {
+            default: '#282839',
+            hover: '#3f3f50',
+            focus: '#5555f6',
         },
         background: {
             main: '#0F0F12',
@@ -95,11 +117,6 @@ export const darkTheme = createTheme(vars, {
             elevated: '#1c1c26',
             input: '#1c1c26',
             hover: '#282839',
-        },
-        border: {
-            default: '#282839',
-            hover: '#3f3f50',
-            focus: '#5555f6',
         },
         text: {
             primary: '#ffffff',
@@ -133,6 +150,18 @@ export const darkTheme = createTheme(vars, {
         '2xl': '24px',
         '3xl': '30px',
         '4xl': '36px',
+    },
+    font: {
+        size: {
+            xs: '12px',
+            sm: '14px',
+            base: '16px',
+            lg: '18px',
+            xl: '20px',
+            '2xl': '24px',
+            '3xl': '30px',
+            '4xl': '36px',
+        },
     },
     fontWeight: {
         normal: '400',
@@ -168,6 +197,13 @@ export const lightTheme = createTheme(vars, {
             light: '#7676f8',
             dark: '#3434d4',
             alpha: 'rgba(85, 85, 246, 0.1)',
+            gradient: 'linear-gradient(135deg, #5555f6 0%, #7676f8 100%)',
+            hover: '#6666f7',
+        },
+        border: {
+            default: '#e0e0e8',
+            hover: '#c0c0cc',
+            focus: '#5555f6',
         },
         background: {
             main: '#ffffff',
@@ -175,11 +211,6 @@ export const lightTheme = createTheme(vars, {
             elevated: '#ffffff',
             input: '#f5f5f8',
             hover: '#e8e8ec',
-        },
-        border: {
-            default: '#e0e0e8',
-            hover: '#c0c0cc',
-            focus: '#5555f6',
         },
         text: {
             primary: '#0F0F12',
@@ -213,6 +244,18 @@ export const lightTheme = createTheme(vars, {
         '2xl': '24px',
         '3xl': '30px',
         '4xl': '36px',
+    },
+    font: {
+        size: {
+            xs: '12px',
+            sm: '14px',
+            base: '16px',
+            lg: '18px',
+            xl: '20px',
+            '2xl': '24px',
+            '3xl': '30px',
+            '4xl': '36px',
+        },
     },
     fontWeight: {
         normal: '400',

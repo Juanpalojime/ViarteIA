@@ -9,33 +9,54 @@ export default function AuthPage() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [name, setName] = useState('');
+    const [formError, setFormError] = useState('');
 
-    // Auth Store
     const { login, register, isAuthenticated, isLoading, error } = useAuthStore();
     const navigate = useNavigate();
 
-    // Redirect if authenticated
+    // Redirigir si ya está autenticado
     useEffect(() => {
         if (isAuthenticated) {
-            navigate('/generation'); // Redirigir a la app principal
+            navigate('/generation');
         }
     }, [isAuthenticated, navigate]);
 
+    // Validación en tiempo real de la contraseña (solo en registro)
+    useEffect(() => {
+        if (!isLogin && password) {
+            if (password.length < 8) {
+                setFormError('La contraseña debe tener al menos 8 caracteres');
+            } else if (!/[A-Z]/.test(password)) {
+                setFormError('La contraseña debe incluir al menos una letra mayúscula');
+            } else if (!/[0-9]/.test(password)) {
+                setFormError('La contraseña debe incluir al menos un número');
+            } else {
+                setFormError('');
+            }
+        } else {
+            setFormError('');
+        }
+    }, [password, isLogin]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setFormError('');
+
+        // Validación local (no depende del backend)
+        if (!isLogin && password !== confirmPassword) {
+            setFormError('Las contraseñas no coinciden');
+            return;
+        }
 
         try {
             if (isLogin) {
                 await login(email, password);
             } else {
-                if (password !== confirmPassword) {
-                    throw new Error("Passwords do not match");
-                }
                 await register(email, password, name);
             }
         } catch (err) {
-            // Error is handled in store and displayed via `error` state
-            console.error(err);
+            // Los errores de red/auth ya están en `error` del store
+            console.error('Auth error:', err);
         }
     };
 
@@ -47,24 +68,29 @@ export default function AuthPage() {
                 <div className={styles.header}>
                     <h1 className={styles.title}>ViarteIA</h1>
                     <p className={styles.subtitle}>
-                        {isLogin ? 'Welcome back! Log in to continue.' : 'Create your account to start generating.'}
+                        {isLogin
+                            ? '¡Bienvenido de nuevo! Inicia sesión para continuar.'
+                            : 'Crea tu cuenta para empezar a generar videos con IA.'}
                     </p>
                 </div>
 
-                {error && (
+                {(formError || error) && (
                     <div className={styles.error}>
-                        {error}
+                        {formError || error}
                     </div>
                 )}
 
                 <form className={styles.form} onSubmit={handleSubmit}>
                     {!isLogin && (
                         <div className={styles.inputGroup}>
-                            <label className={styles.label}>Full Name</label>
+                            <label className={styles.label} htmlFor="name">
+                                Nombre completo
+                            </label>
                             <input
+                                id="name"
                                 className={styles.input}
                                 type="text"
-                                placeholder="John Doe"
+                                placeholder="Juan Pérez"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 required={!isLogin}
@@ -73,11 +99,14 @@ export default function AuthPage() {
                     )}
 
                     <div className={styles.inputGroup}>
-                        <label className={styles.label}>Email Address</label>
+                        <label className={styles.label} htmlFor="email">
+                            Correo electrónico
+                        </label>
                         <input
+                            id="email"
                             className={styles.input}
                             type="email"
-                            placeholder="you@example.com"
+                            placeholder="tu@ejemplo.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -85,8 +114,11 @@ export default function AuthPage() {
                     </div>
 
                     <div className={styles.inputGroup}>
-                        <label className={styles.label}>Password</label>
+                        <label className={styles.label} htmlFor="password">
+                            Contraseña
+                        </label>
                         <input
+                            id="password"
                             className={styles.input}
                             type="password"
                             placeholder="••••••••"
@@ -98,8 +130,11 @@ export default function AuthPage() {
 
                     {!isLogin && (
                         <div className={styles.inputGroup}>
-                            <label className={styles.label}>Confirm Password</label>
+                            <label className={styles.label} htmlFor="confirmPassword">
+                                Confirmar contraseña
+                            </label>
                             <input
+                                id="confirmPassword"
                                 className={styles.input}
                                 type="password"
                                 placeholder="••••••••"
@@ -115,24 +150,36 @@ export default function AuthPage() {
                         type="submit"
                         disabled={isLoading}
                     >
-                        {isLoading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
+                        {isLoading
+                            ? 'Procesando...'
+                            : isLogin
+                                ? 'Iniciar sesión'
+                                : 'Crear cuenta'}
                     </button>
                 </form>
 
                 <div className={styles.footer}>
                     {isLogin ? (
                         <p>
-                            Don't have an account?{' '}
-                            <span className={styles.link} onClick={() => setIsLogin(false)}>
-                                Sign up
-                            </span>
+                            ¿No tienes cuenta?{' '}
+                            <button
+                                type="button"
+                                className={styles.linkButton}
+                                onClick={() => setIsLogin(false)}
+                            >
+                                Regístrate
+                            </button>
                         </p>
                     ) : (
                         <p>
-                            Already have an account?{' '}
-                            <span className={styles.link} onClick={() => setIsLogin(true)}>
-                                Sign in
-                            </span>
+                            ¿Ya tienes cuenta?{' '}
+                            <button
+                                type="button"
+                                className={styles.linkButton}
+                                onClick={() => setIsLogin(true)}
+                            >
+                                Inicia sesión
+                            </button>
                         </p>
                     )}
                 </div>

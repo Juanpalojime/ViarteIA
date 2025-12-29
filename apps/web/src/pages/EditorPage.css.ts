@@ -10,7 +10,7 @@ export const editorLayout = style({
 });
 
 export const header = style({
-    borderBottom: `1px solid ${vars.color.border}`,
+    borderBottom: `1px solid ${vars.color.border.default}`,
     display: 'flex',
     alignItems: 'center',
     padding: '0 16px',
@@ -21,21 +21,21 @@ export const header = style({
 export const mainSection = style({
     display: 'grid',
     gridTemplateColumns: '300px 1fr 250px', // Browser, Preview, Properties
-    borderBottom: `1px solid ${vars.color.border}`,
+    borderBottom: `1px solid ${vars.color.border.default}`,
     overflow: 'hidden',
 });
 
 export const panel = style({
     display: 'flex',
     flexDirection: 'column',
-    borderRight: `1px solid ${vars.color.border}`,
+    borderRight: `1px solid ${vars.color.border.default}`,
     height: '100%',
     overflow: 'hidden',
 });
 
 export const panelHeader = style({
     padding: '12px',
-    borderBottom: `1px solid ${vars.color.border}`,
+    borderBottom: `1px solid ${vars.color.border.default}`,
     fontSize: vars.font.size.sm,
     fontWeight: 600,
     backgroundColor: '#1a1a2e',
@@ -93,7 +93,7 @@ export const timelineContainer = style({
 
 export const timelineToolbar = style({
     height: '40px',
-    borderBottom: `1px solid ${vars.color.border}`,
+    borderBottom: `1px solid ${vars.color.border.default}`,
     display: 'flex',
     alignItems: 'center',
     padding: '0 16px',
@@ -184,4 +184,4 @@ export const button = style({
     background: '#222',
     color: 'white',
     cursor: 'pointer',
-}]);
+});
