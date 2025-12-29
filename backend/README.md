@@ -41,3 +41,9 @@ REDIS_HOST=localhost
 PYTHON_API_URL=http://localhost:8000
 GROQ_API_KEY=your_groq_api_key # Requerido para Magic Prompt
 ```
+
+## 🔒 Security & Deployment
+- **Never commit `.env` files**: Ensure they are always in `.gitignore`.
+- **Use `.env.example`**: Use template files with placeholders for development.
+- **Production**: Configure environment variables directly in your hosting provider (Vercel, Render, Railway, etc.).
+- **Docker**: Mount `.env` as a volume or use the `--env-file` flag.
