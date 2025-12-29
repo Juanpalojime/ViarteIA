@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
 
-from app.routers import text_to_video, image_to_video, health
+from app.routers import text_to_video, image_to_video, health, magic_prompt
 
 # Configure logging
 logging.basicConfig(
@@ -33,6 +33,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(text_to_video.router, prefix="/generate", tags=["generation"])
 app.include_router(image_to_video.router, prefix="/generate", tags=["generation"])
+app.include_router(magic_prompt.router, tags=["ai"])
 
 @app.on_event("startup")
 async def startup_event():

@@ -9,10 +9,10 @@ import multipart from '@fastify/multipart';
 import fastifyRedis from '@fastify/redis';
 import websocket from '@fastify/websocket';
 import fastifyJwt from '@fastify/jwt';
-import { PrismaClient } from '@prisma/client';
+import db from './db';
 import { generationRoutes } from './routes/generation';
 import { authRoutes } from './routes/auth';
-import { assetsRoutes } from './routes/assets'; // Fixed extra space in path
+import { assetsRoutes } from './routes/assets';
 import { aiRoutes } from './routes/ai';
 import { initStorage } from './services/storage';
 import helmet from '@fastify/helmet';
@@ -28,7 +28,7 @@ for (const env of REQUIRED_ENV) {
     }
 }
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient(); // REMOVED
 const server = Fastify({
     logger: process.env.NODE_ENV === 'production' ? true : {
         transport: {
@@ -41,6 +41,7 @@ const server = Fastify({
     },
     maxParamLength: 5000,
     ignoreTrailingSlash: true,
+    pluginTimeout: 20000, // Increase timeout for slow plugins (like S3)
 });
 
 // Register plugins
@@ -71,8 +72,8 @@ server.register(fastifyRedis, {
     port: Number(process.env.REDIS_PORT) || 6379
 });
 
-// Decorate fastify with prisma
-server.decorate('prisma', prisma);
+// Decorate fastify with db
+server.decorate('db', db);
 
 // Auth decorator (mejorado)
 server.decorate('authenticate', async function (request: FastifyRequest, reply: FastifyReply) {
@@ -159,8 +160,8 @@ const start = async () => {
             await initStorage();
             console.log('✅ Storage initialized');
         } catch (storageErr) {
-            server.log.error({ err: storageErr }, 'Failed to initialize storage');
-            process.exit(1);
+            server.log.warn({ err: storageErr }, '⚠️ Failed to initialize storage. Uploads may not work.');
+            // process.exit(1); // Non-blocking for local dev
         }
 
         const port = Number(process.env.PORT) || 3001;

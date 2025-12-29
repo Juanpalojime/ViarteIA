@@ -39,5 +39,5 @@ DATABASE_URL="file:./dev.db"
 PORT=3001
 REDIS_HOST=localhost
 PYTHON_API_URL=http://localhost:8000
-GROQ_API_KEY=gsk_xxx... # Requerido para Magic Prompt
+GROQ_API_KEY=your_groq_api_key # Requerido para Magic Prompt
 ```

@@ -2,15 +2,18 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import Groq from 'groq-sdk';
 
-// 🔴 ¡CRÍTICO! Valida la API key al cargar el módulo
-if (!process.env.GROQ_API_KEY) {
-    throw new Error(
-        '❌ FATAL: GROQ_API_KEY no está definida. Asegúrate de configurarla en tu entorno.'
-    );
-}
+// 🟢 Cliente Groq (Lazy init para evitar problemas de hoisting con dotenv)
+let groq: Groq;
 
-// 🟢 Cliente Groq reutilizable (solo una instancia)
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+function getGroqClient() {
+    if (!groq) {
+        if (!process.env.GROQ_API_KEY) {
+            throw new Error('❌ FATAL: GROQ_API_KEY no está definida.');
+        }
+        groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    }
+    return groq;
+}
 
 // 🟢 Tipos seguros para mensajes
 type ChatMessage = {
@@ -48,7 +51,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
         try {
             const { userIdea } = MagicPromptSchema.parse(request.body);
 
-            const chatCompletion = await groq.chat.completions.create({
+            const chatCompletion = await getGroqClient().chat.completions.create({
                 messages: [
                     {
                         role: 'system',
@@ -101,7 +104,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
                 { role: 'user', content: message },
             ];
 
-            const chatCompletion = await groq.chat.completions.create({
+            const chatCompletion = await getGroqClient().chat.completions.create({
                 messages,
                 model: 'llama3-8b-8192',
                 max_tokens: 1000,

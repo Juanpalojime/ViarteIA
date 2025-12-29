@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import axios from 'axios';
+import { randomUUID } from 'crypto';
 
 // Schema validation
 const GenerationRequestSchema = z.object({
@@ -18,7 +19,7 @@ const GenerationRequestSchema = z.object({
 });
 
 export async function generationRoutes(fastify: FastifyInstance) {
-    const prisma = (fastify as any).prisma;
+    const db = (fastify as any).db;
 
     // Create Generation
     fastify.post('/', {
@@ -30,17 +31,24 @@ export async function generationRoutes(fastify: FastifyInstance) {
             const user = (request as any).user;
 
             // 2. Create DB Record linked to user
-            const generation = await prisma.generation.create({
-                data: {
-                    userId: user.id,
-                    type: body.type,
-                    prompt: body.prompt,
-                    negativePrompt: body.negativePrompt,
-                    settings: JSON.stringify(body.settings || {}),
-                    status: 'pending',
-                    progress: 0,
-                },
-            });
+            const generationId = randomUUID();
+            const settingsJson = JSON.stringify(body.settings || {});
+
+            db.prepare(`
+                INSERT INTO Generation (id, userId, type, prompt, negativePrompt, settings, status, progress)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+                generationId,
+                user.id,
+                body.type,
+                body.prompt,
+                body.negativePrompt || null,
+                settingsJson,
+                'pending',
+                0
+            );
+
+            const generation = db.prepare('SELECT * FROM Generation WHERE id = ?').get(generationId);
 
             // 3. Trigger AI Service (Python)
             const pythonApiUrl = process.env.PYTHON_API_URL || 'http://localhost:8000';
@@ -68,19 +76,17 @@ export async function generationRoutes(fastify: FastifyInstance) {
                     .catch(err => fastify.log.error(`AI Service Async Error: ${err.message}`));
 
                 // Update status to processing
-                const updated = await prisma.generation.update({
-                    where: { id: generation.id },
-                    data: { status: 'processing' }
-                });
+                db.prepare('UPDATE Generation SET status = ? WHERE id = ?').run('processing', generation.id);
+                const updated = db.prepare('SELECT * FROM Generation WHERE id = ?').get(generation.id);
 
                 return reply.send(updated);
 
             } catch (aiError: any) {
                 fastify.log.error(`AI Service immediate failure: ${aiError.message}`);
-                await prisma.generation.update({
-                    where: { id: generation.id },
-                    data: { status: 'failed', error: 'AI Service Communication Error' }
-                });
+
+                db.prepare('UPDATE Generation SET status = ?, error = ? WHERE id = ?')
+                    .run('failed', 'AI Service Communication Error', generation.id);
+
                 return reply.status(503).send({ error: 'AI Service Unavailable' });
             }
 
@@ -98,11 +104,13 @@ export async function generationRoutes(fastify: FastifyInstance) {
         onRequest: [fastify.authenticate]
     }, async (request, reply) => {
         const user = (request as any).user;
-        const generations = await prisma.generation.findMany({
-            where: { userId: user.id },
-            orderBy: { createdAt: 'desc' },
-            take: 50
-        });
+        const generations = db.prepare(`
+            SELECT * FROM Generation 
+            WHERE userId = ? 
+            ORDER BY createdAt DESC 
+            LIMIT 50
+        `).all(user.id);
+
         return reply.send(generations);
     });
 
@@ -119,10 +127,16 @@ export async function generationRoutes(fastify: FastifyInstance) {
         if (status === 'completed') updateData.progress = 100;
 
         try {
-            const generation = await prisma.generation.update({
-                where: { id },
-                data: updateData
-            });
+            // Dynamic Update
+            const keys = Object.keys(updateData);
+            if (keys.length > 0) {
+                const setClause = keys.map(k => `${k} = ?`).join(', ');
+                const values = keys.map(k => updateData[k]);
+
+                db.prepare(`UPDATE Generation SET ${setClause} WHERE id = ?`).run(...values, id);
+            }
+
+            const generation = db.prepare('SELECT * FROM Generation WHERE id = ?').get(id);
 
             // Notify WebSocket clients
             fastify.websocketServer.clients.forEach((client: any) => {

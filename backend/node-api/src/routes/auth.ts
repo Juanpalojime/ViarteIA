@@ -1,11 +1,11 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
-import { User } from '@prisma/client'; // ✅ Tipado de Prisma
+import { randomUUID } from 'crypto';
 
 // ✅ Tipado explícito del usuario en la sesión JWT
-declare module 'fastify' {
-    interface FastifyRequest {
+declare module '@fastify/jwt' {
+    interface FastifyJWT {
         user: {
             id: string;
             email: string;
@@ -38,8 +38,8 @@ const excludePassword = <T extends { password: string }>(user: T): Omit<T, 'pass
 };
 
 export async function authRoutes(fastify: FastifyInstance) {
-    // ✅ Acceso tipado a Prisma
-    const prisma = fastify.prisma;
+    // ✅ Acceso a DB (SQLite)
+    const db = (fastify as any).db;
 
     // REGISTER
     fastify.post('/register', async (request, reply) => {
@@ -47,7 +47,7 @@ export async function authRoutes(fastify: FastifyInstance) {
             const { email, password, name } = RegisterSchema.parse(request.body);
 
             // Verificar si el usuario ya existe
-            const existingUser = await prisma.user.findUnique({ where: { email } });
+            const existingUser = db.prepare('SELECT * FROM User WHERE email = ?').get(email);
             if (existingUser) {
                 // ✅ Mensaje genérico para evitar enumeración de usuarios
                 return reply.status(400).send({ error: 'Credenciales inválidas' });
@@ -57,14 +57,16 @@ export async function authRoutes(fastify: FastifyInstance) {
             const hashedPassword = await bcrypt.hash(password, 12); // ✅ 12 rondas para mayor seguridad
 
             // Crear usuario
-            const user = await prisma.user.create({
-                data: {
-                    email,
-                    password: hashedPassword,
-                    name: name || email.split('@')[0],
-                    role: 'user',
-                },
-            });
+            const userId = randomUUID();
+            const role = 'user';
+            const userName = name || email.split('@')[0];
+
+            db.prepare(`
+                INSERT INTO User (id, email, password, name, role)
+                VALUES (?, ?, ?, ?, ?)
+            `).run(userId, email, hashedPassword, userName, role);
+
+            const user = db.prepare('SELECT * FROM User WHERE id = ?').get(userId);
 
             // Generar token JWT
             const token = fastify.jwt.sign({
@@ -97,7 +99,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         try {
             const { email, password } = LoginSchema.parse(request.body);
 
-            const user = await prisma.user.findUnique({ where: { email } });
+            const user = db.prepare('SELECT * FROM User WHERE email = ?').get(email);
             if (!user) {
                 // ✅ Mismo mensaje que para contraseña incorrecta (evita enumeración)
                 return reply.status(401).send({ error: 'Credenciales inválidas' });
@@ -138,7 +140,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         try {
             const { id } = request.user;
 
-            const user = await prisma.user.findUnique({ where: { id } });
+            const user = db.prepare('SELECT * FROM User WHERE id = ?').get(id);
             if (!user) {
                 return reply.status(404).send({ error: 'Usuario no encontrado' });
             }
