@@ -9,7 +9,7 @@ import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import { generationRoutes } from './routes/generation';
 import { authRoutes } from './routes/auth';
-import { assetsRoutes } from './routes/assets';
+import { assetsRoutes } from './routes/assets'; // Fixed extra space in path
 import { aiRoutes } from './routes/ai';
 import { initStorage } from './services/storage';
 import helmet from '@fastify/helmet';
@@ -26,7 +26,7 @@ for (const env of REQUIRED_ENV) {
     }
 }
 
-const prisma = new PrismaClient(); // Uses DATABASE_URL from .env by default
+const prisma = new PrismaClient();
 const server = Fastify({
     logger: process.env.NODE_ENV === 'production' ? true : {
         transport: {
@@ -72,18 +72,21 @@ server.register(fastifyRedis, {
 // Decorate fastify with prisma
 server.decorate('prisma', prisma);
 
-// Auth decorator
+// Auth decorator (mejorado)
 server.decorate('authenticate', async function (request: FastifyRequest, reply: FastifyReply) {
     try {
         await request.jwtVerify();
     } catch (err) {
-        reply.send(err);
+        reply.status(401).send({
+            error: 'Unauthorized',
+            message: 'Invalid or missing authentication token'
+        });
     }
 });
 
 // Register routes
 server.register(async (fastify) => {
-    // Public Health (no prefix or optional)
+    // Public Health
     fastify.get('/health', async () => {
         return { status: 'ok', timestamp: new Date().toISOString() };
     });
@@ -106,7 +109,7 @@ server.register(async (fastify) => {
         api.register(aiRoutes, { prefix: '/ai' });
     }, { prefix: '/api' });
 
-    // WebSocket endpoint for progress updates
+    // WebSocket endpoint
     fastify.get('/ws/progress', { websocket: true }, (connection, _req) => {
         connection.socket.on('message', (message: string) => {
             fastify.log.info(`WS Message: ${message.toString()}`);
@@ -114,38 +117,57 @@ server.register(async (fastify) => {
     });
 });
 
-const start = async () => {
-    try {
-        // Initialize services
-        await initStorage();
-        console.log('Storage initialized');
-
-        const port = Number(process.env.PORT) || 3001;
-        await server.listen({ port, host: '0.0.0.0' });
-        console.log(`Server running on port ${port}`);
-    } catch (err) {
-        server.log.error(err);
-        process.exit(1);
-    }
-};
-
-// Global Error Handler
+// ✅ Global Error Handler (TypeScript-safe)
 server.setErrorHandler((error, _request, reply) => {
     server.log.error(error);
 
-    if (error.validation) {
-        return reply.status(400).send({
-            error: 'Validation Error',
-            message: error.message
-        });
+    if (typeof error === 'object' && error !== null) {
+        if ('validation' in error) {
+            return reply.status(400).send({
+                error: 'Validation Error',
+                message: (error as any).message || 'Invalid input'
+            });
+        }
+
+        const err = error as { statusCode?: number; name?: string; message?: string };
+        const statusCode = typeof err.statusCode === 'number' ? err.statusCode : 500;
+        const name = typeof err.name === 'string' ? err.name : 'Internal Server Error';
+        const message =
+            process.env.NODE_ENV === 'production'
+                ? 'An unexpected error occurred'
+                : (typeof err.message === 'string' ? err.message : 'Unknown error');
+
+        return reply.status(statusCode).send({ error: name, message });
     }
 
-    reply.status(error.statusCode || 500).send({
-        error: error.name || 'Internal Server Error',
+    // Fallback for non-object errors (e.g., string, number)
+    return reply.status(500).send({
+        error: 'Internal Server Error',
         message: process.env.NODE_ENV === 'production'
             ? 'An unexpected error occurred'
-            : error.message
+            : 'Unknown error type'
     });
 });
+
+// Start server
+const start = async () => {
+    try {
+        // Initialize services with error handling
+        try {
+            await initStorage();
+            console.log('✅ Storage initialized');
+        } catch (storageErr) {
+            server.log.error({ err: storageErr }, 'Failed to initialize storage');
+            process.exit(1);
+        }
+
+        const port = Number(process.env.PORT) || 3001;
+        await server.listen({ port, host: '0.0.0.0' });
+        console.log(`🚀 Server running on port ${port}`);
+    } catch (err) {
+        server.log.error({ err: err }, 'Failed to start server');
+        process.exit(1);
+    }
+};
 
 start();

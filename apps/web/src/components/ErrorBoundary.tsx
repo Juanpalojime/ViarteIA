@@ -11,7 +11,8 @@ interface State {
 
 class ErrorBoundary extends Component<Props, State> {
     public state: State = {
-        hasError: false
+        hasError: false,
+        error: undefined,
     };
 
     public static getDerivedStateFromError(error: Error): State {
@@ -54,11 +55,11 @@ class ErrorBoundary extends Component<Props, State> {
                             transition: 'background 0.2s'
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#6666f7'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#5555f7'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#5555f6'}
                     >
                         Recargar Aplicación
                     </button>
-                    {process.env.NODE_ENV === 'development' && (
+                    {process.env.NODE_ENV === 'development' && this.state.error && (
                         <pre style={{
                             marginTop: '2rem',
                             padding: '1rem',
@@ -69,14 +70,15 @@ class ErrorBoundary extends Component<Props, State> {
                             fontSize: '0.8rem',
                             color: '#ff4444'
                         }}>
-                            {this.state.error?.toString()}
+                            {this.state.error.toString()}
                         </pre>
                     )}
                 </div>
             );
         }
 
-        return this.children;
+        // ✅ CORREGIDO: usa this.props.children
+        return this.props.children;
     }
 }
 

@@ -51,7 +51,6 @@ if __name__ == "__main__":
         "PYTHON_API_URL": "http://localhost:8000",
         "DATABASE_URL": "file:./dev.db",
         "JWT_SECRET": "professional_secret_key_change_me",
-        "GROQ_API_KEY": os.getenv("GROQ_API_KEY", "***REMOVED_GROQ_API_KEY***")
     }
     
     web_env = {
