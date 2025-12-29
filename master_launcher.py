@@ -46,11 +46,12 @@ if __name__ == "__main__":
     root_dir = os.getcwd()
 
     # ENV Variables
+    # Use environment variables if present, otherwise default for local dev
     node_env = {
-        "PORT": "3001",
-        "PYTHON_API_URL": "http://localhost:8000",
-        "DATABASE_URL": "file:./dev.db",
-        "JWT_SECRET": "professional_secret_key_change_me",
+        "PORT": os.getenv("PORT", "3001"),
+        "PYTHON_API_URL": os.getenv("PYTHON_API_URL", "http://localhost:8000"),
+        "DATABASE_URL": os.getenv("DATABASE_URL", "file:./dev.db"),
+        "JWT_SECRET": os.getenv("JWT_SECRET", "dev_secret_key_change_me_in_prod"),
     }
     
     web_env = {
@@ -58,15 +59,15 @@ if __name__ == "__main__":
         "VITE_WS_URL": f"{api_public_url.replace('http', 'ws')}/ws/progress"
     }
 
-    # Commands
-    node_cmd = "pnpm install && npx prisma db push && npm run dev"
-    python_cmd = "pip install -r requirements.txt && uvicorn src.app.main:app --host 0.0.0.0 --port 8000"
-    web_cmd = "pnpm install && npm run dev -- --port 3000 --host"
+    # Commands - Skip heavy installs if node_modules already exists
+    node_cmd = "if [ ! -d \"node_modules\" ]; then pnpm install; fi && npm run dev"
+    python_cmd = "pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    web_cmd = "if [ ! -d \"node_modules\" ]; then pnpm install; fi && npm run dev -- --port 3000 --host"
 
     # Threads
     threads = [
         threading.Thread(target=run_service, args=("Node API", node_cmd, "backend/node-api", node_env)),
-        threading.Thread(target=run_service, args=("Python AI", python_cmd, "backend/python-ai")),
+        threading.Thread(target=run_service, args=("Python AI", python_cmd, "backend/python-ai/src")),
         threading.Thread(target=run_service, args=("Web Frontend", web_cmd, "apps/web", web_env)),
     ]
 

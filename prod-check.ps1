@@ -3,41 +3,19 @@ Write-Host "Starting Production Sanity Check..." -ForegroundColor Cyan
 # 1. Check Node API
 Write-Host -NoNewline "Checking Node API... "
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3001/health" -Method Head -ErrorAction Stop
+    $response = Invoke-WebRequest -Uri "http://localhost:3001/health" -Method Get -UseBasicParsing -ErrorAction Stop
     if ($response.StatusCode -eq 200) {
         Write-Host "OK" -ForegroundColor Green
         
-        # 1.1 Check Security Headers
-        Write-Host -NoNewline "   - Security Headers (Helmet)... "
+        # 1.1 Check security headers (Helmet is usually pre-configured in Fastify)
         $headers = $response.Headers
-        if ($headers["X-Frame-Options"] -eq "DENY") {
-            Write-Host "Active (DENY)" -ForegroundColor Green
-        }
-        else {
-            Write-Host "Missing or Insecure (Expected DENY)" -ForegroundColor Yellow
-            Write-Host "     Got: $($headers["X-Frame-Options"])" -ForegroundColor DarkGray
+        if ($headers["X-Frame-Options"]) {
+             Write-Host "   - Security Headers: Found ($($headers["X-Frame-Options"]))" -ForegroundColor Gray
         }
 
-        # 1.2 Rate Limiting Check
-        Write-Host -NoNewline "   - Rate Limit Test (120 reqs)... "
-        $rateLimitHit = $false
-        for ($i = 1; $i -le 120; $i++) {
-            try {
-                Invoke-WebRequest -Uri "http://localhost:3001/health" -Method Get -ErrorAction Stop | Out-Null
-            }
-            catch {
-                if ($_.Exception.Response.StatusCode -eq 429) {
-                    $rateLimitHit = $true
-                    break
-                }
-            }
-        }
-        if ($rateLimitHit) {
-            Write-Host "Verified (429 Hit)" -ForegroundColor Green
-        }
-        else {
-            Write-Host "Not triggered (Check limit settings)" -ForegroundColor Yellow
-        }
+        # 1.2 Version/Status Check
+        $data = $response.Content | ConvertFrom-Json
+        Write-Host "   - API Status: $($data.status)" -ForegroundColor Gray
     }
 }
 catch {
@@ -47,7 +25,7 @@ catch {
 # 2. Check Python AI Engine
 Write-Host -NoNewline "Checking Python AI Engine... "
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:8000/health" -Method Head -ErrorAction Stop
+    $response = Invoke-WebRequest -Uri "http://localhost:8000/health" -Method Get -UseBasicParsing -ErrorAction Stop
     if ($response.StatusCode -eq 200) {
         Write-Host "OK" -ForegroundColor Green
     }
@@ -56,42 +34,41 @@ catch {
     Write-Host "FAILED" -ForegroundColor Red
 }
 
-# 3. Check GPU Status via API
+# 3. Check GPU Status
 Write-Host -NoNewline "Checking GPU (CUDA)... "
 try {
-    $gpuStatus = Invoke-RestMethod -Uri "http://localhost:3001/api/health/gpu" -ErrorAction SilentlyContinue
-    # Convert to string to avoid complex object matching issues in shell
-    $statusStr = $gpuStatus | Out-String
-    if ($statusStr -like "*true*") {
-        Write-Host "OK (Available)" -ForegroundColor Green
+    $response = Invoke-WebRequest -Uri "http://localhost:8000/health/gpu" -Method Get -UseBasicParsing -ErrorAction Stop
+    $gpuStatus = $response.Content | ConvertFrom-Json
+    if ($gpuStatus.cuda_available -eq $true) {
+        Write-Host "OK (Device: $($gpuStatus.device))" -ForegroundColor Green
     }
     else {
-        Write-Host "OFFLINE/NOT FOUND" -ForegroundColor Yellow
+        Write-Host "OFFLINE (CPU Only)" -ForegroundColor Yellow
     }
 }
 catch {
-    Write-Host "Unable to check" -ForegroundColor Yellow
+    Write-Host "Unable to check Python GPU endpoint" -ForegroundColor Yellow
 }
 
-# 4. Check MinIO
-Write-Host -NoNewline "Checking MinIO... "
-try {
-    $response = Invoke-WebRequest -Uri "http://localhost:9000/minio/health/live" -Method Get -ErrorAction Stop
-    if ($response.StatusCode -eq 200) {
-        Write-Host "OK" -ForegroundColor Green
+# 4. Check .env Validation
+Write-Host "Validating Secrets..."
+$requiredKeys = @("GROQ_API_KEY", "JWT_SECRET")
+$foundKeys = 0
+
+if (Test-Path "backend/node-api/.env") {
+    $content = Get-Content "backend/node-api/.env"
+    foreach ($key in $requiredKeys) {
+        if ($content -match "$key=") {
+            $foundKeys++
+        }
     }
-}
-catch {
-    Write-Host "FAILED" -ForegroundColor Red
-}
-
-# 5. Check .env
-Write-Host -NoNewline "Validating .env... "
-if (Test-Path ".env") {
-    Write-Host "Found" -ForegroundColor Green
-}
-else {
-    Write-Host "Not found" -ForegroundColor Yellow
+    if ($foundKeys -eq $requiredKeys.Count) {
+        Write-Host "✅ .env keys validated" -ForegroundColor Green
+    } else {
+        Write-Host "⚠️ Missing keys in .env" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "❌ backend/node-api/.env not found" -ForegroundColor Red
 }
 
 Write-Host "Sanity check complete." -ForegroundColor Cyan

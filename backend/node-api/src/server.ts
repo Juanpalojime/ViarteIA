@@ -66,11 +66,19 @@ server.register(fastifyJwt, {
     secret: process.env.JWT_SECRET || 'supersecret_dev_key_12345'
 });
 
-// Redis connection
-server.register(fastifyRedis, {
-    host: process.env.REDIS_HOST || '127.0.0.1',
-    port: Number(process.env.REDIS_PORT) || 6379
-});
+// Redis connection (Optional for local dev)
+if (process.env.REDIS_HOST || process.env.REDIS_PORT) {
+    server.register(fastifyRedis, {
+        host: process.env.REDIS_HOST || '127.0.0.1',
+        port: Number(process.env.REDIS_PORT) || 6379,
+        connectTimeout: 5000, // Do not wait forever
+    }).ready((err) => {
+        if (err) server.log.warn('⚠️ Redis not available. Some features may be limited.');
+        else server.log.info('✅ Redis connected');
+    });
+} else {
+    server.log.info('ℹ️ Redis skipped (no config)');
+}
 
 // Decorate fastify with db
 server.decorate('db', db);
@@ -91,7 +99,28 @@ server.decorate('authenticate', async function (request: FastifyRequest, reply: 
 server.register(async (fastify) => {
     // Public Health
     fastify.get('/health', async () => {
-        return { status: 'ok', timestamp: new Date().toISOString() };
+        const uptime = process.uptime();
+        const memoryUsage = process.memoryUsage();
+
+        let dbStatus = 'connected';
+        try {
+            // Simple query to verify SQLite connection
+            db.prepare('SELECT 1').get();
+        } catch (e) {
+            dbStatus = 'error';
+        }
+
+        return {
+            status: 'ok',
+            service: 'node-api',
+            uptime: `${Math.floor(uptime)}s`,
+            database: dbStatus,
+            memory: {
+                rss: `${Math.round(memoryUsage.rss / 1024 / 1024)} MB`,
+                heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)} MB`,
+            },
+            timestamp: new Date().toISOString()
+        };
     });
 
     // API Routes
@@ -155,14 +184,12 @@ server.setErrorHandler((error, _request, reply) => {
 // Start server
 const start = async () => {
     try {
-        // Initialize services with error handling
-        try {
-            await initStorage();
+        // Initialize services in background to avoid blocking server start (esp. S3 connection)
+        initStorage().then(() => {
             console.log('✅ Storage initialized');
-        } catch (storageErr) {
+        }).catch(storageErr => {
             server.log.warn({ err: storageErr }, '⚠️ Failed to initialize storage. Uploads may not work.');
-            // process.exit(1); // Non-blocking for local dev
-        }
+        });
 
         const port = Number(process.env.PORT) || 3001;
         await server.listen({ port, host: '0.0.0.0' });
