@@ -1,0 +1,33 @@
+{
+  "name": "viarteia",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ViarteIA - AI-Powered Video Generation Platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "backend/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "web": "pnpm --filter web dev",
+    "api": "pnpm --filter @viarteia/node-api dev",
+    "python": "cd backend/python-ai && set PYTHONPATH=src&& uvicorn app.main:app --reload",
+    "docker:up": "docker-compose -f infra/docker/docker-compose.yml up",
+    "docker:down": "docker-compose -f infra/docker/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.8.2",
+    "@types/node": "^22.14.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

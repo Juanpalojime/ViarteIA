@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Hashed password
+  name      String?
+  role      String   @default("user") // admin, user
+  credits   Int      @default(50)
+  plan      String   @default("free") // free, pro, enterprise
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  projects  Project[]
+  generations Generation[]
+}
+
+model Project {
+  id          String       @id @default(uuid())
+  name        String
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  generations Generation[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Generation {
+  id            String   @id @default(uuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id])
+  type          String   // text-to-video, image-to-video
+  prompt        String
+  negativePrompt String?
+  settings      String   // JSON string of settings (aspectRatio, duration, etc)
+  status        String   // pending, processing, completed, failed
+  progress      Int      @default(0)
+  resultUrl     String?  // URL to the final video/image
+  thumbnailUrl  String?
+  error         String?
+  cost          Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

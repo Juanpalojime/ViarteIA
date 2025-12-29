@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  # Frontend (Vite + React)
+  web:
+    build:
+      context: ../../apps/web
+      dockerfile: ../../infra/docker/Dockerfile.web
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3001}
+    volumes:
+      - ../../apps/web:/app
+      - /app/node_modules
+    restart: always
+    depends_on:
+      node-api:
+        condition: service_healthy
+
+  # Node.js API (Fastify)
+  node-api:
+    build:
+      context: ../../backend/node-api
+      dockerfile: ../../infra/docker/Dockerfile.node
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=${PORT:-3001}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PYTHON_API_URL=http://python-ai:8000
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - S3_ENDPOINT=${S3_ENDPOINT:-http://minio:9000}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY:-admin}
+      - S3_SECRET_KEY=${S3_SECRET_KEY:-adminpassword}
+      - S3_BUCKET=${S3_BUCKET:-viarteia-assets}
+      - JWT_SECRET=${JWT_SECRET}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    volumes:
+      - ../../backend/node-api:/app
+      - /app/node_modules
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      python-ai:
+        condition: service_healthy
+
+  # Python AI API (FastAPI)
+  python-ai:
+    build:
+      context: ../../backend/python-ai
+      dockerfile: ../../infra/docker/Dockerfile.python
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=0
+      - NODE_API_URL=http://node-api:3001
+      - S3_ENDPOINT=${S3_ENDPOINT:-http://minio:9000}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY:-admin}
+      - S3_SECRET_KEY=${S3_SECRET_KEY:-adminpassword}
+      - S3_BUCKET=${S3_BUCKET:-viarteia-assets}
+    volumes:
+      - ../../backend/python-ai:/app
+      - ai-models:/root/.cache/huggingface
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+
+  # Redis (Cache & Queue)
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # MinIO (S3-compatible storage)
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=adminpassword
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  redis-data:
+  minio-data:
+  ai-models:
