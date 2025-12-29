@@ -219,13 +219,13 @@ class AIEngine:
             generator = torch.manual_seed(seed) if seed != -1 else None
             
             logger.info(f"Starting T2V Generation: {prompt}")
-            # Use CogVideoX-2b
+            
             frames = self.t2v_pipe(
-                prompt=prompt,
+                prompt,
+                negative_prompt=negative_prompt,
                 num_frames=num_frames,
-                num_inference_steps=50,
-                generator=generator,
-                guidance_scale=6.0
+                num_inference_steps=30,
+                generator=generator
             ).frames[0]
             
             if face_image:

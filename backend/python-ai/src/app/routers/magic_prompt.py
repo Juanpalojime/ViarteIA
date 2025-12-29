@@ -23,7 +23,7 @@ async def generate_magic_prompt(request: MagicPromptRequest):
         
         # Implementation from user snippet
         completion = client.chat.completions.create(
-            model="openai/gpt-oss-120b", # User specified model
+            model="llama3-8b-8192", # User specified model
             messages=[
                 {
                     "role": "system",
